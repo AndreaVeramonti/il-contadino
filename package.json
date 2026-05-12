@@ -1,0 +1,18 @@
+{
+  "name": "gioco-v2",
+  "description": "Platform gioco rurale/contadino - Phaser 3",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite --config vite/config.dev.mjs",
+    "build": "vite build --config vite/config.prod.mjs",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "typescript": "~5.7.2",
+    "vite": "^6.3.1"
+  },
+  "dependencies": {
+    "phaser": "^3.80.0"
+  }
+}
