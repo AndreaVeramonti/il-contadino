@@ -17,6 +17,7 @@ export class Player {
     private baseJump: number = -420;
     private speed: number = 200;
     private jumpSpeed: number = -420;
+    private targetAngle: number = 0;
 
     constructor(config: { scene: Phaser.Scene; x: number; y: number }) {
         this.scene = config.scene;
@@ -48,12 +49,21 @@ export class Player {
         const left = this.cursors.left.isDown || this.wasd.A.isDown;
         const right = this.cursors.right.isDown || this.wasd.D.isDown;
 
-        if (left) { this.sprite.setVelocityX(-this.speed); this.sprite.setFlipX(true); }
-        else if (right) { this.sprite.setVelocityX(this.speed); this.sprite.setFlipX(false); }
-        else { this.sprite.setVelocityX(0); }
+        if (left) { this.sprite.setVelocityX(-this.speed); this.sprite.setFlipX(true); this.targetAngle = 8; }
+        else if (right) { this.sprite.setVelocityX(this.speed); this.sprite.setFlipX(false); this.targetAngle = -8; }
+        else { this.sprite.setVelocityX(0); this.targetAngle = 0; }
+
+        if (onGround) {
+            this.sprite.angle = Phaser.Math.Linear(this.sprite.angle, this.targetAngle, 0.15);
+        } else {
+            this.sprite.angle = Phaser.Math.Linear(this.sprite.angle, 0, 0.1);
+        }
 
         const jump = this.cursors.up.isDown || this.wasd.W.isDown || this.spaceKey.isDown;
-        if (jump && onGround) this.sprite.setVelocityY(this.jumpSpeed);
+        if (jump && onGround) {
+            this.sprite.setVelocityY(this.jumpSpeed);
+            this.scene.events.emit('player-jumped');
+        }
     }
 
     hit(damage: number = 1): boolean {

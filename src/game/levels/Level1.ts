@@ -7,13 +7,16 @@
 //   - = dirt (underground)
 //   P = player spawn
 //   C = coin
-//   E = enemy patrol start
+//   E = enemy (corvo, patrol)
+//   B = cinghiale (carica)
+//   L = lumaca (immune stomp)
 //   X = exit / level end
 //   U = powerup (invincibilità)
 //   S = powerup velocità
 //   F = powerup falce (uccide nemici)
 //   D = powerup punti doppi
 //   H = floating hay platform
+//   ? = breakable block
 
 export const LEVEL_1_WIDTH = 120;
 export const LEVEL_1_HEIGHT = 18;
@@ -46,7 +49,7 @@ export const LEVEL_1: string[] = [
     // Row 12
     'P.C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C..C.X',
     // Row 13
-    '############################################################################################################################################################################',
+    '#############?############################################?########################################################################################################',
     // Row 14
     '----------------------------------------------------------------------------------------------------------------------------------------------------------------------------',
     // Row 15
@@ -61,10 +64,12 @@ export const LEVEL_1: string[] = [
 export interface LevelData {
     platforms: { x: number; y: number; type: string }[];
     coins: { x: number; y: number }[];
-    enemies: { x: number; y: number }[];
+    enemies: { x: number; y: number; type?: string }[];
     playerSpawn: { x: number; y: number };
     exit: { x: number; y: number } | null;
     powerups: { x: number; y: number; type: string }[];
+    water: { x: number; y: number }[];
+    breakables: { x: number; y: number }[];
 }
 
 export function parseLevel(level: string[], tileSize: number): LevelData {
@@ -75,6 +80,8 @@ export function parseLevel(level: string[], tileSize: number): LevelData {
         playerSpawn: { x: 0, y: 0 },
         exit: null,
         powerups: [],
+        water: [],
+        breakables: [],
     };
 
     for (let row = 0; row < level.length; row++) {
@@ -97,7 +104,16 @@ export function parseLevel(level: string[], tileSize: number): LevelData {
                     data.coins.push({ x, y });
                     break;
                 case 'E':
-                    data.enemies.push({ x: col * tileSize + tileSize / 2, y: (row + 1) * tileSize });
+                    data.enemies.push({ x: col * tileSize + tileSize / 2, y: (row + 1) * tileSize, type: 'crow' });
+                    break;
+                case 'B':
+                    data.enemies.push({ x: col * tileSize + tileSize / 2, y: (row + 1) * tileSize, type: 'boar' });
+                    break;
+                case 'L':
+                    data.enemies.push({ x: col * tileSize + tileSize / 2, y: (row + 1) * tileSize, type: 'snail' });
+                    break;
+                case '?':
+                    data.breakables.push({ x, y });
                     break;
                 case 'P':
                     data.playerSpawn = { x, y };
@@ -116,6 +132,9 @@ export function parseLevel(level: string[], tileSize: number): LevelData {
                     break;
                 case 'D':
                     data.powerups.push({ x, y, type: 'points' });
+                    break;
+                case 'W':
+                    data.water.push({ x, y });
                     break;
             }
         }

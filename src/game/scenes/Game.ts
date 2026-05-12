@@ -2,11 +2,14 @@ import { Scene } from 'phaser';
 import { Player } from '../objects/Player';
 import { Coin } from '../objects/Coin';
 import { Enemy } from '../objects/Enemy';
+import { EnemyType } from '../objects/EnemyTypes';
 import { PowerUp, getPowerUpLabel, PowerUpType } from '../objects/PowerUp';
 import { LEVEL_1, LEVEL_1_WIDTH, parseLevel } from '../levels/Level1';
+import { LEVEL_2, LEVEL_2_WIDTH } from '../levels/Level2';
+import { LEVEL_3, LEVEL_3_WIDTH } from '../levels/Level3';
+import { SoundManager } from '../systems/SoundManager';
 
 const TILE = 32;
-const LEVEL_1_HEIGHT = 18;
 
 export class Game extends Scene {
     private player!: Player;
@@ -25,8 +28,17 @@ export class Game extends Scene {
     private coinText!: Phaser.GameObjects.Text;
     private livesText!: Phaser.GameObjects.Text;
     private respawning: boolean = false;
+    private soundManager!: SoundManager;
+    private exitIndicator!: Phaser.GameObjects.Text;
+    private currentLevel: number = 1;
+    private waterGroup!: Phaser.Physics.Arcade.StaticGroup;
+    private breakableBlocks!: Phaser.Physics.Arcade.StaticGroup;
 
     constructor() { super('Game'); }
+
+    init(data: { level?: number }): void {
+        this.currentLevel = data?.level ?? 1;
+    }
 
     create(): void {
         this.levelComplete = false;
@@ -35,16 +47,31 @@ export class Game extends Scene {
         this.coins = [];
         this.powerups = [];
 
-        const worldW = LEVEL_1_WIDTH * TILE;
-        const worldH = LEVEL_1_HEIGHT * TILE;
+        this.soundManager = new SoundManager();
+
+        let levelData: ReturnType<typeof parseLevel>;
+        let worldW: number;
+        const worldH = 18 * TILE;
+
+        switch (this.currentLevel) {
+            case 2:
+                worldW = LEVEL_2_WIDTH * TILE;
+                levelData = parseLevel(LEVEL_2, TILE);
+                break;
+            case 3:
+                worldW = LEVEL_3_WIDTH * TILE;
+                levelData = parseLevel(LEVEL_3, TILE);
+                break;
+            default:
+                worldW = LEVEL_1_WIDTH * TILE;
+                levelData = parseLevel(LEVEL_1, TILE);
+                break;
+        }
         this.physics.world.setBounds(0, 0, worldW, worldH);
 
-        // Background parallax layers
         this.add.image(400, 300, 'bg').setScrollFactor(0);
         const hillsBg = this.add.tileSprite(0, worldH - 240, 800, 160, 'hills');
         hillsBg.setOrigin(0, 0).setScrollFactor(0.3).setAlpha(0.5);
-
-        const levelData = parseLevel(LEVEL_1, TILE);
 
         // Build platforms
         this.platforms = this.physics.add.staticGroup();
@@ -54,14 +81,13 @@ export class Game extends Scene {
         }
         this.platforms.refresh();
 
-        // Decorative trees on top of ground (col 5, 15, 25, 35, ...)
-        for (let col = 4; col < LEVEL_1_WIDTH; col += 18) {
+        const levelCols = Math.floor(worldW / TILE);
+        for (let col = 4; col < levelCols; col += 18) {
             const tx = col * TILE + TILE / 2;
-            const ty = 13 * TILE + TILE / 2 - 24; // above ground
+            const ty = 13 * TILE + TILE / 2 - 24;
             this.add.image(tx, ty, 'tree').setDepth(5);
         }
-        // Flowers here and there
-        for (let col = 2; col < LEVEL_1_WIDTH; col += 7) {
+        for (let col = 2; col < levelCols; col += 7) {
             const fx = col * TILE + TILE / 2;
             const fy = 13 * TILE + TILE / 2 - 18;
             this.add.image(fx, fy, 'flower').setDepth(4).setAlpha(0.8);
@@ -72,15 +98,24 @@ export class Game extends Scene {
             this.coins.push(new Coin(this, c.x, c.y));
         }
 
-        // Enemies
-        for (const e of levelData.enemies) {
-            this.enemies.push(new Enemy(this, e.x, e.y));
-        }
-
         // Powerups
         for (const u of levelData.powerups) {
             this.powerups.push(new PowerUp(this, u.x, u.y, u.type as PowerUpType));
         }
+
+        // Water tiles (death zone)
+        this.waterGroup = this.physics.add.staticGroup();
+        for (const w of levelData.water) {
+            this.waterGroup.create(w.x, w.y, 'water').setTint(0x3388FF).setAlpha(0.7).setDepth(1);
+        }
+        this.waterGroup.refresh();
+
+        // Breakable blocks (?)
+        this.breakableBlocks = this.physics.add.staticGroup();
+        for (const b of levelData.breakables) {
+            this.breakableBlocks.create(b.x, b.y, 'dirt').setTint(0xFFD700).setDepth(2);
+        }
+        this.breakableBlocks.refresh();
 
         // Exit
         if (levelData.exit) {
@@ -96,6 +131,11 @@ export class Game extends Scene {
             x: levelData.playerSpawn.x,
             y: levelData.playerSpawn.y - 18,
         });
+
+        // Enemies (after player so they can reference it)
+        for (const e of levelData.enemies) {
+            this.enemies.push(new Enemy(this, e.x, e.y, (e.type as EnemyType) || 'crow', this.player));
+        }
 
         // Camera
         this.cameras.main.setBounds(0, 0, worldW, worldH);
@@ -118,15 +158,102 @@ export class Game extends Scene {
             this.physics.add.overlap(this.player.sprite, this.exitSprite, () => this.reachExit());
         }
 
+        // Breakable blocks (collider so player stands on them)
+        this.physics.add.collider(this.player.sprite, this.breakableBlocks, (_obj1, block) => {
+            const pBody = this.player.sprite.body as Phaser.Physics.Arcade.Body;
+            // Break from below: player hitting block while moving up
+            if (pBody.velocity.y < 0) {
+                const bs = block as Phaser.Physics.Arcade.Sprite;
+                this.breakBlock(bs);
+            }
+        });
+
+        // Water collision = death
+        if (this.waterGroup.getLength() > 0) {
+            this.physics.add.overlap(this.player.sprite, this.waterGroup, () => this.onWaterTouch());
+        }
+
+        // Exit indicator
+        this.exitIndicator = this.add.text(0, 0, '▼', {
+            fontFamily: 'Arial', fontSize: '24px', color: '#00FF00',
+            stroke: '#000000', strokeThickness: 4,
+        }).setOrigin(0.5).setScrollFactor(0).setDepth(200).setVisible(false);
+
         this.createHUD();
         this.events.on('player-hit', (dmg: number) => this.onPlayerHit(dmg));
         this.events.on('player-died', () => this.onPlayerDied());
+
+        this.soundManager.startMusic();
+
+        this.events.on('player-jumped', () => this.soundManager.playJump());
     }
 
     update(): void {
         if (this.levelComplete || this.respawning) return;
         this.player.update();
         for (const e of this.enemies) if (e.alive) e.update();
+        this.updateExitIndicator();
+    }
+
+    private updateExitIndicator(): void {
+        if (!this.exitSprite) { this.exitIndicator.setVisible(false); return; }
+        const exitX = this.exitSprite.x;
+        const exitY = this.exitSprite.y;
+        const cam = this.cameras.main;
+        const margin = 40;
+        const insideX = exitX > cam.scrollX + margin && exitX < cam.scrollX + cam.width - margin;
+        const insideY = exitY > cam.scrollY + margin && exitY < cam.scrollY + cam.height - margin;
+        if (insideX && insideY) {
+            this.exitIndicator.setVisible(false);
+            return;
+        }
+        const cx = cam.width / 2;
+        const cy = cam.height / 2;
+        const dx = exitX - (cam.scrollX + cx);
+        const dy = exitY - (cam.scrollY + cy);
+        const angle = Math.atan2(dy, dx);
+        const edgeX = cx + Math.cos(angle) * (cx - margin);
+        const edgeY = cy + Math.sin(angle) * (cy - margin);
+        this.exitIndicator.setPosition(edgeX, edgeY).setVisible(true);
+        this.exitIndicator.setRotation(angle + Math.PI / 2);
+    }
+
+    private breakBlock(block: Phaser.Physics.Arcade.Sprite): void {
+        const bx = block.x;
+        const by = block.y;
+        this.spawnParticles(bx, by, 10, 0xFFD700, 'particle');
+        block.destroy();
+        this.score += 5;
+        this.comboCount++;
+        this.updateHUD();
+        this.soundManager.playCoin();
+        this.showFloatingScore(bx, by, '+5', 0xFFD700);
+    }
+
+    private spawnParticles(x: number, y: number, count: number, color: number, textureKey: string = 'particle'): void {
+        const emitter = this.add.particles(x, y, textureKey, {
+            speed: { min: 60, max: 180 },
+            angle: { min: 200, max: 340 },
+            scale: { start: 1.2, end: 0 },
+            lifespan: 600,
+            gravityY: 250,
+            quantity: count,
+            tint: color,
+            emitting: false,
+        });
+        emitter.explode(count);
+        this.time.delayedCall(700, () => { if (emitter && emitter.active) emitter.destroy(); });
+    }
+
+    private showFloatingScore(x: number, y: number, text: string, color: number = 0xFFFFFF): void {
+        const label = this.add.text(x, y - 10, text, {
+            fontFamily: 'Arial', fontSize: '16px', color: `#${color.toString(16).padStart(6, '0')}`,
+            stroke: '#000000', strokeThickness: 3, fontStyle: 'bold',
+        }).setOrigin(0.5).setDepth(200);
+        this.tweens.add({
+            targets: label, y: y - 60, alpha: 0, duration: 800, ease: 'Power2',
+            onComplete: () => label.destroy(),
+        });
     }
 
     private collectCoin(coin: Coin): void {
@@ -138,6 +265,10 @@ export class Game extends Scene {
         const multiplier = this.player.doublePoints ? 2 : 1;
         this.score += 10 * bonus * multiplier;
         this.updateHUD();
+        this.soundManager.playCoin();
+        this.spawnParticles(coin.sprite.x, coin.sprite.y, 8, 0xFFD700);
+        this.cameras.main.shake(50, 0.003);
+        this.showFloatingScore(coin.sprite.x, coin.sprite.y, `+${10 * bonus * multiplier}`, 0xFFD700);
         if (this.comboCount >= 3) {
             const label = multiplier > 1 ? `+${10 * bonus * multiplier} (x${this.comboCount}) DOPPIO!` : `+${10 * bonus} (x${this.comboCount})`;
             this.showCombo(label);
@@ -147,27 +278,32 @@ export class Game extends Scene {
     private playerEnemyCollision(enemy: Enemy): void {
         if (!enemy.alive || !this.player.alive || this.respawning) return;
 
-        // Kill mode: any contact kills the enemy
+        // Kill mode: any contact kills the enemy (bypasses stompable check)
         if (this.player.killMode) {
-            enemy.stomp();
+            enemy.kill();
             const pts = this.player.doublePoints ? 100 : 50;
             this.score += pts;
             this.comboCount++;
             this.updateHUD();
             this.player.sprite.setVelocityY(-200);
+            this.spawnParticles(enemy.sprite.x, enemy.sprite.y, 10, 0xFF4444);
+            this.soundManager.playStomp();
             this.showCombo(`+${pts} FALCE!`);
             return;
         }
 
         const pBody = this.player.sprite.body as Phaser.Physics.Arcade.Body;
         const eBody = enemy.sprite.body as Phaser.Physics.Arcade.Body;
-        if (pBody.velocity.y > 0 && (pBody.y + pBody.height) < (eBody.y + 20)) {
+        if (pBody.velocity.y > 0 && (pBody.y + pBody.height) < (eBody.y + 20) && enemy.stompable) {
             enemy.stomp();
             const pts = this.player.doublePoints ? 100 : 50;
             this.score += pts;
             this.comboCount++;
             this.updateHUD();
             this.player.sprite.setVelocityY(-300);
+            this.soundManager.playStomp();
+            this.spawnParticles(enemy.sprite.x, enemy.sprite.y, 12, 0xFF4444);
+            this.cameras.main.shake(100, 0.005);
             this.showCombo(`+${pts}`);
         } else if (!this.player.invincible) {
             this.comboCount = 0;
@@ -175,42 +311,60 @@ export class Game extends Scene {
         }
     }
 
+    private onWaterTouch(): void {
+        if (this.respawning) return;
+        this.soundManager.playHit();
+        this.lives = 0;
+        this.updateHUD();
+        this.player.die();
+    }
+
     private collectPowerup(powerup: PowerUp): void {
         if (powerup.collected || this.respawning) return;
         powerup.collect();
 
+        let color = 0x00FF00;
+        switch (powerup.type) {
+            case 'invincible': color = 0x00FF00; this.player.activatePowerup(); break;
+            case 'speed':      color = 0xFFFF00; this.player.activateSpeedBoost(); break;
+            case 'kill':       color = 0xFF4444; this.player.activateKillMode(); break;
+            case 'points':     color = 0xFFA500; this.player.activateDoublePoints(); break;
+        }
+
         const label = getPowerUpLabel(powerup.type);
         this.score += 30;
         this.updateHUD();
+        this.soundManager.playPowerup();
+        this.spawnParticles(powerup.sprite.x, powerup.sprite.y, 10, color);
         this.showCombo(`+30 ${label}`);
-
-        switch (powerup.type) {
-            case 'invincible':
-                this.player.activatePowerup();
-                break;
-            case 'speed':
-                this.player.activateSpeedBoost();
-                break;
-            case 'kill':
-                this.player.activateKillMode();
-                break;
-            case 'points':
-                this.player.activateDoublePoints();
-                break;
-        }
     }
 
     private reachExit(): void {
         if (this.levelComplete || this.respawning) return;
         this.levelComplete = true;
         this.score += this.lives * 100;
-        this.scene.start('GameOver', { victory: true, score: this.score });
+        this.soundManager.playLevelComplete();
+        if (this.currentLevel < 3) {
+            this.time.delayedCall(1500, () => {
+                this.scene.start('Game', { level: this.currentLevel + 1 });
+            });
+        } else {
+            this.time.delayedCall(1500, () => {
+                this.scene.start('GameOver', { victory: true, score: this.score });
+            });
+        }
     }
 
     private onPlayerHit(damage: number): void {
         this.comboCount = 0;
         this.lives -= damage;
         this.updateHUD();
+        this.soundManager.playHit();
+        this.tweens.add({
+            targets: this.livesText,
+            scaleX: 1.4, scaleY: 1.4,
+            duration: 150, yoyo: true, ease: 'Back.easeOut',
+        });
         if (this.lives <= 0) this.player.die();
         else this.player.makeInvincible(1500);
     }
@@ -221,6 +375,10 @@ export class Game extends Scene {
         this.time.delayedCall(1500, () => {
             this.scene.start('GameOver', { victory: false, score: this.score });
         });
+    }
+
+    shutdown(): void {
+        this.soundManager.stopMusic();
     }
 
     private createHUD(): void {

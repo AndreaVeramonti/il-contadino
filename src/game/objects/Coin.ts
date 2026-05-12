@@ -18,11 +18,18 @@ export class Coin {
         if (this.collected) return;
         this.collected = true;
 
+        this.sprite.body!.enable = false;
+
+        this.sprite.setVelocityY(-250);
+
         this.scene.tweens.add({
             targets: this.sprite,
             alpha: 0,
-            y: this.sprite.y - 30,
-            duration: 300,
+            scaleX: 0,
+            scaleY: 0,
+            angle: 360,
+            duration: 500,
+            ease: 'Power2',
             onComplete: () => { this.sprite.destroy(); }
         });
     }
