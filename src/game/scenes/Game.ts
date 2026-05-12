@@ -121,7 +121,6 @@ export class Game extends Scene {
             this.exitSprite = this.physics.add.sprite(levelData.exit.x, levelData.exit.y + 16, 'exit');
             const body = this.exitSprite.body as Phaser.Physics.Arcade.Body;
             body.allowGravity = false;
-            body.setSize(64, 32);
             this.exitSprite.setImmovable(true);
             this.exitSprite.setDepth(10);
         }
@@ -154,9 +153,6 @@ export class Game extends Scene {
         }
         for (const p of this.powerups) {
             this.physics.add.overlap(this.player.sprite, p.sprite, () => this.collectPowerup(p));
-        }
-        if (this.exitSprite) {
-            this.physics.add.overlap(this.player.sprite, this.exitSprite, () => this.reachExit());
         }
         // Breakable blocks (collider so player stands on them)
         this.physics.add.collider(this.player.sprite, this.breakableBlocks, (_obj1, block) => {
@@ -193,6 +189,7 @@ export class Game extends Scene {
         this.player.update();
         for (const e of this.enemies) if (e.alive) e.update();
         this.updateExitIndicator();
+        this.checkExitDistance();
     }
 
     private updateExitIndicator(): void {
@@ -407,5 +404,13 @@ export class Game extends Scene {
     private showCombo(text: string): void {
         this.comboText.setText(text).setAlpha(1).setY(300);
         this.tweens.add({ targets: this.comboText, y: 250, alpha: 0, duration: 800, ease: 'Power2' });
+    }
+
+    private checkExitDistance(): void {
+        if (!this.exitSprite || this.levelComplete || this.respawning) return;
+        const dist = Math.abs(this.player.sprite.x - this.exitSprite.x);
+        if (dist < 48) {
+            this.reachExit();
+        }
     }
 }
