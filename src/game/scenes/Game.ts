@@ -118,12 +118,11 @@ export class Game extends Scene {
         this.breakableBlocks.refresh();
 
         if (levelData.exit) {
-            this.exitSprite = this.physics.add.sprite(levelData.exit.x, levelData.exit.y - 16, 'exit');
+            this.exitSprite = this.physics.add.sprite(levelData.exit.x, levelData.exit.y + 16, 'exit');
             const body = this.exitSprite.body as Phaser.Physics.Arcade.Body;
             body.allowGravity = false;
-            body.setSize(48, 48);
+            body.setSize(64, 32);
             this.exitSprite.setImmovable(true);
-            this.exitSprite.setOrigin(0.5, 1);
             this.exitSprite.setDepth(10);
         }
 
