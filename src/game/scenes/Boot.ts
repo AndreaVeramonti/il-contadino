@@ -23,28 +23,28 @@ export class Boot extends Scene {
         });
 
         // Sky gradient background
-        this.genTex('bg', 800, 600, (g) => {
+        this.genTex('bg', 960, 540, (g) => {
             const top = 0x87CEEB, bot = 0xE0F0FF;
-            for (let y = 0; y < 600; y++) {
-                const t = y / 600;
+            for (let y = 0; y < 540; y++) {
+                const t = y / 540;
                 const r = ((top>>16)&0xFF)*(1-t)+((bot>>16)&0xFF)*t;
                 const gn = ((top>>8)&0xFF)*(1-t)+((bot>>8)&0xFF)*t;
                 const b = (top&0xFF)*(1-t)+(bot&0xFF)*t;
                 g.fillStyle((Math.round(r)<<16)|(Math.round(gn)<<8)|Math.round(b));
-                g.fillRect(0, y, 800, 1);
+                g.fillRect(0, y, 960, 1);
             }
             g.fillStyle(0xFFFACD);
-            g.fillCircle(680, 80, 40);
+            g.fillCircle(816, 80, 40);
             g.fillStyle(0xFFFFE0);
-            g.fillCircle(680, 80, 30);
+            g.fillCircle(816, 80, 30);
             g.fillStyle(0xFFFFFF);
-            g.fillEllipse(150, 80, 160, 50);
-            g.fillEllipse(400, 120, 200, 60);
-            g.fillEllipse(600, 160, 140, 45);
+            g.fillEllipse(180, 80, 160, 50);
+            g.fillEllipse(480, 120, 200, 60);
+            g.fillEllipse(720, 160, 140, 45);
         });
 
         // Parallax hills
-        this.genTex('hills', 800, 160, (g) => {
+        this.genTex('hills', 960, 160, (g) => {
             g.fillStyle(0x6B8E23);
             g.fillEllipse(100, 160, 300, 120);
             g.fillEllipse(350, 160, 250, 100);

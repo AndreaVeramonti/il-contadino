@@ -69,8 +69,8 @@ export class Game extends Scene {
         }
         this.physics.world.setBounds(0, 0, worldW, worldH);
 
-        this.add.image(400, 300, 'bg').setScrollFactor(0);
-        const hillsBg = this.add.tileSprite(0, worldH - 240, 800, 160, 'hills');
+        this.add.image(480, 270, 'bg').setScrollFactor(0);
+        const hillsBg = this.add.tileSprite(0, worldH - 240, 960, 160, 'hills');
         hillsBg.setOrigin(0, 0).setScrollFactor(0.3).setAlpha(0.5);
 
         // Build platforms
@@ -389,7 +389,7 @@ export class Game extends Scene {
             fontFamily: 'Arial', fontSize: '20px', color: '#FF4444',
             stroke: '#000000', strokeThickness: 3,
         }).setScrollFactor(0).setDepth(100);
-        this.comboText = this.add.text(400, 300, '', {
+        this.comboText = this.add.text(480, 270, '', {
             fontFamily: 'Arial', fontSize: '28px', color: '#FFD700',
             stroke: '#000000', strokeThickness: 5, fontStyle: 'bold',
         }).setOrigin(0.5).setScrollFactor(0).setDepth(101).setAlpha(0);
@@ -402,8 +402,8 @@ export class Game extends Scene {
     }
 
     private showCombo(text: string): void {
-        this.comboText.setText(text).setAlpha(1).setY(300);
-        this.tweens.add({ targets: this.comboText, y: 250, alpha: 0, duration: 800, ease: 'Power2' });
+        this.comboText.setText(text).setAlpha(1).setY(270);
+        this.tweens.add({ targets: this.comboText, y: 220, alpha: 0, duration: 800, ease: 'Power2' });
     }
 
     private checkExitDistance(): void {

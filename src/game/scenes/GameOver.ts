@@ -17,7 +17,7 @@ export class GameOver extends Scene {
         this.cameras.main.setBackgroundColor(0x1a1a2e);
 
         if (this.victory) {
-            this.add.text(512, 200, 'LIVELLO COMPLETATO!', {
+            this.add.text(480, 180, 'LIVELLO COMPLETATO!', {
                 fontFamily: 'Georgia, serif',
                 fontSize: '48px',
                 color: '#FFD700',
@@ -25,9 +25,9 @@ export class GameOver extends Scene {
                 strokeThickness: 6,
             }).setOrigin(0.5);
 
-            this.add.image(512, 320, 'exit').setScale(2);
+            this.add.image(480, 288, 'exit').setScale(2);
         } else {
-            this.add.text(512, 200, 'GAME OVER', {
+            this.add.text(480, 180, 'GAME OVER', {
                 fontFamily: 'Georgia, serif',
                 fontSize: '56px',
                 color: '#FF4444',
@@ -35,7 +35,7 @@ export class GameOver extends Scene {
                 strokeThickness: 6,
             }).setOrigin(0.5);
 
-            this.add.text(512, 300, 'Il corvo ha vinto...', {
+            this.add.text(480, 270, 'Il corvo ha vinto...', {
                 fontFamily: 'Georgia, serif',
                 fontSize: '24px',
                 color: '#CCCCCC',
@@ -43,13 +43,13 @@ export class GameOver extends Scene {
             }).setOrigin(0.5);
         }
 
-        this.add.text(512, 420, `Punteggio: ${this.finalScore}`, {
+        this.add.text(480, 378, `Punteggio: ${this.finalScore}`, {
             fontFamily: 'Arial',
             fontSize: '28px',
             color: '#FFFFFF',
         }).setOrigin(0.5);
 
-        const restartText = this.add.text(512, 500, 'CLICCA PER RICOMINCIARE', {
+        const restartText = this.add.text(480, 450, 'CLICCA PER RICOMINCIARE', {
             fontFamily: 'Arial',
             fontSize: '22px',
             color: '#FFD700',
