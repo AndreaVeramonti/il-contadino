@@ -4,9 +4,9 @@ import { Coin } from '../objects/Coin';
 import { Enemy } from '../objects/Enemy';
 import { EnemyType } from '../objects/EnemyTypes';
 import { PowerUp, getPowerUpLabel, PowerUpType } from '../objects/PowerUp';
-import { LEVEL_1, LEVEL_1_WIDTH, parseLevel } from '../levels/Level1';
-import { LEVEL_2, LEVEL_2_WIDTH } from '../levels/Level2';
-import { LEVEL_3, LEVEL_3_WIDTH } from '../levels/Level3';
+import { LEVEL_1, parseLevel } from '../levels/Level1';
+import { LEVEL_2 } from '../levels/Level2';
+import { LEVEL_3 } from '../levels/Level3';
 import { SoundManager } from '../systems/SoundManager';
 
 const TILE = 32;
@@ -55,16 +55,16 @@ export class Game extends Scene {
 
         switch (this.currentLevel) {
             case 2:
-                worldW = LEVEL_2_WIDTH * TILE;
                 levelData = parseLevel(LEVEL_2, TILE);
+                worldW = Math.max(...LEVEL_2.map(r => r.length)) * TILE;
                 break;
             case 3:
-                worldW = LEVEL_3_WIDTH * TILE;
                 levelData = parseLevel(LEVEL_3, TILE);
+                worldW = Math.max(...LEVEL_3.map(r => r.length)) * TILE;
                 break;
             default:
-                worldW = LEVEL_1_WIDTH * TILE;
                 levelData = parseLevel(LEVEL_1, TILE);
+                worldW = Math.max(...LEVEL_1.map(r => r.length)) * TILE;
                 break;
         }
         this.physics.world.setBounds(0, 0, worldW, worldH);
