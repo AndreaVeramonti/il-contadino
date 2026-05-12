@@ -21,7 +21,6 @@ export class Player {
         this.sprite.setOffset(4, 4);
         this.sprite.setCollideWorldBounds(true);
         (this.sprite.body as Phaser.Physics.Arcade.Body).setMaxVelocityY(600);
-
         this.setupInput();
     }
 
@@ -39,29 +38,17 @@ export class Player {
 
     update(): void {
         if (!this.alive) return;
-
         const body = this.sprite.body as Phaser.Physics.Arcade.Body;
         const onGround = body.blocked.down || body.touching.down;
-
         const left = this.cursors.left.isDown || this.wasd.A.isDown;
         const right = this.cursors.right.isDown || this.wasd.D.isDown;
 
-        if (left) {
-            this.sprite.setVelocityX(-this.speed);
-            this.sprite.setFlipX(true);
-        } else if (right) {
-            this.sprite.setVelocityX(this.speed);
-            this.sprite.setFlipX(false);
-        } else {
-            this.sprite.setVelocityX(0);
-        }
+        if (left) { this.sprite.setVelocityX(-this.speed); this.sprite.setFlipX(true); }
+        else if (right) { this.sprite.setVelocityX(this.speed); this.sprite.setFlipX(false); }
+        else { this.sprite.setVelocityX(0); }
 
-        const jumpPressed = this.cursors.up.isDown || this.wasd.W.isDown || this.spaceKey.isDown;
-        if (jumpPressed && onGround) {
-            this.sprite.setVelocityY(this.jumpSpeed);
-        }
-
-        this.sprite.setTexture(onGround ? 'player-idle' : 'player-jump');
+        const jump = this.cursors.up.isDown || this.wasd.W.isDown || this.spaceKey.isDown;
+        if (jump && onGround) this.sprite.setVelocityY(this.jumpSpeed);
     }
 
     hit(damage: number = 1): boolean {
@@ -73,24 +60,18 @@ export class Player {
     makeInvincible(duration: number = 1500): void {
         this.invincible = true;
         this.scene.tweens.add({
-            targets: this.sprite,
-            alpha: 0.4,
-            duration: 100,
-            yoyo: true,
-            repeat: Math.floor(duration / 200),
-            onComplete: () => {
-                this.sprite.setAlpha(1);
-                this.invincible = false;
-            }
+            targets: this.sprite, alpha: 0.4, duration: 100,
+            yoyo: true, repeat: Math.floor(duration / 200),
+            onComplete: () => { this.sprite.setAlpha(1); this.invincible = false; }
         });
     }
 
     activatePowerup(): void {
         this.hasPowerup = true;
-        this.sprite.setTint(0x00FF7F);
+        this.sprite.setTexture('player-power');
         this.scene.time.delayedCall(10000, () => {
             this.hasPowerup = false;
-            this.sprite.clearTint();
+            this.sprite.setTexture('player-idle');
         });
     }
 
@@ -99,16 +80,10 @@ export class Player {
         this.sprite.setVelocity(0, -300);
         this.sprite.setTint(0xFF0000);
         this.scene.tweens.add({
-            targets: this.sprite,
-            alpha: 0,
-            duration: 1000,
-            onComplete: () => {
-                this.scene.events.emit('player-died');
-            }
+            targets: this.sprite, alpha: 0, duration: 1000,
+            onComplete: () => { this.scene.events.emit('player-died'); }
         });
     }
 
-    destroy(): void {
-        this.sprite.destroy();
-    }
+    destroy(): void { this.sprite.destroy(); }
 }
