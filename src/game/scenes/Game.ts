@@ -2,7 +2,7 @@ import { Scene } from 'phaser';
 import { Player } from '../objects/Player';
 import { Coin } from '../objects/Coin';
 import { Enemy } from '../objects/Enemy';
-import { PowerUp } from '../objects/PowerUp';
+import { PowerUp, getPowerUpLabel, PowerUpType } from '../objects/PowerUp';
 import { LEVEL_1, LEVEL_1_WIDTH, parseLevel } from '../levels/Level1';
 
 const TILE = 32;
@@ -79,7 +79,7 @@ export class Game extends Scene {
 
         // Powerups
         for (const u of levelData.powerups) {
-            this.powerups.push(new PowerUp(this, u.x, u.y));
+            this.powerups.push(new PowerUp(this, u.x, u.y, u.type as PowerUpType));
         }
 
         // Exit
@@ -135,22 +135,40 @@ export class Game extends Scene {
         this.coinCount++;
         this.comboCount++;
         const bonus = Math.min(this.comboCount, 5);
-        this.score += 10 * bonus;
+        const multiplier = this.player.doublePoints ? 2 : 1;
+        this.score += 10 * bonus * multiplier;
         this.updateHUD();
-        if (this.comboCount >= 3) this.showCombo(`+${10 * bonus} (x${this.comboCount})`);
+        if (this.comboCount >= 3) {
+            const label = multiplier > 1 ? `+${10 * bonus * multiplier} (x${this.comboCount}) DOPPIO!` : `+${10 * bonus} (x${this.comboCount})`;
+            this.showCombo(label);
+        }
     }
 
     private playerEnemyCollision(enemy: Enemy): void {
         if (!enemy.alive || !this.player.alive || this.respawning) return;
+
+        // Kill mode: any contact kills the enemy
+        if (this.player.killMode) {
+            enemy.stomp();
+            const pts = this.player.doublePoints ? 100 : 50;
+            this.score += pts;
+            this.comboCount++;
+            this.updateHUD();
+            this.player.sprite.setVelocityY(-200);
+            this.showCombo(`+${pts} FALCE!`);
+            return;
+        }
+
         const pBody = this.player.sprite.body as Phaser.Physics.Arcade.Body;
         const eBody = enemy.sprite.body as Phaser.Physics.Arcade.Body;
         if (pBody.velocity.y > 0 && (pBody.y + pBody.height) < (eBody.y + 20)) {
             enemy.stomp();
-            this.score += 50;
+            const pts = this.player.doublePoints ? 100 : 50;
+            this.score += pts;
             this.comboCount++;
             this.updateHUD();
             this.player.sprite.setVelocityY(-300);
-            this.showCombo('+50');
+            this.showCombo(`+${pts}`);
         } else if (!this.player.invincible) {
             this.comboCount = 0;
             this.player.hit(1);
@@ -160,10 +178,26 @@ export class Game extends Scene {
     private collectPowerup(powerup: PowerUp): void {
         if (powerup.collected || this.respawning) return;
         powerup.collect();
-        this.player.activatePowerup();
+
+        const label = getPowerUpLabel(powerup.type);
         this.score += 30;
         this.updateHUD();
-        this.showCombo('+30 POTENZIAMENTO!');
+        this.showCombo(`+30 ${label}`);
+
+        switch (powerup.type) {
+            case 'invincible':
+                this.player.activatePowerup();
+                break;
+            case 'speed':
+                this.player.activateSpeedBoost();
+                break;
+            case 'kill':
+                this.player.activateKillMode();
+                break;
+            case 'points':
+                this.player.activateDoublePoints();
+                break;
+        }
     }
 
     private reachExit(): void {

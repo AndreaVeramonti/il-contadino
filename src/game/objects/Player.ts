@@ -5,11 +5,16 @@ export class Player {
     public alive: boolean = true;
     public invincible: boolean = false;
     public hasPowerup: boolean = false;
+    public speedBoost: boolean = false;
+    public killMode: boolean = false;
+    public doublePoints: boolean = false;
 
     private scene: Phaser.Scene;
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
     private spaceKey!: Phaser.Input.Keyboard.Key;
+    private baseSpeed: number = 200;
+    private baseJump: number = -420;
     private speed: number = 200;
     private jumpSpeed: number = -420;
 
@@ -68,10 +73,49 @@ export class Player {
 
     activatePowerup(): void {
         this.hasPowerup = true;
+        this.invincible = true;
         this.sprite.setTexture('player-power');
         this.scene.time.delayedCall(10000, () => {
             this.hasPowerup = false;
+            this.invincible = false;
             this.sprite.setTexture('player-idle');
+        });
+    }
+
+    activateSpeedBoost(): void {
+        this.speedBoost = true;
+        this.speed = this.baseSpeed * 1.8;
+        this.jumpSpeed = this.baseJump * 1.3;
+        this.sprite.setTint(0xFFFF00);
+        this.scene.time.delayedCall(8000, () => {
+            this.speedBoost = false;
+            this.speed = this.baseSpeed;
+            this.jumpSpeed = this.baseJump;
+            if (!this.hasPowerup && !this.killMode && !this.doublePoints) {
+                this.sprite.clearTint();
+            }
+        });
+    }
+
+    activateKillMode(): void {
+        this.killMode = true;
+        this.sprite.setTint(0xFF4444);
+        this.scene.time.delayedCall(8000, () => {
+            this.killMode = false;
+            if (!this.hasPowerup && !this.speedBoost && !this.doublePoints) {
+                this.sprite.clearTint();
+            }
+        });
+    }
+
+    activateDoublePoints(): void {
+        this.doublePoints = true;
+        this.sprite.setTint(0xFFA500);
+        this.scene.time.delayedCall(10000, () => {
+            this.doublePoints = false;
+            if (!this.hasPowerup && !this.speedBoost && !this.killMode) {
+                this.sprite.clearTint();
+            }
         });
     }
 

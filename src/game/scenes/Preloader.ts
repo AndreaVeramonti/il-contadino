@@ -19,6 +19,9 @@ export class Preloader extends Scene {
         this.load.svg('enemy-flat', 'enemy-flat.svg', { width: 28, height: 8 });
         this.load.svg('coin', 'coin.svg', { width: 20, height: 20 });
         this.load.svg('powerup', 'powerup.svg', { width: 24, height: 24 });
+        this.load.svg('pu-speed', 'thunder.svg', { width: 24, height: 24 });
+        this.load.svg('pu-kill', 'scissor.svg', { width: 24, height: 24 });
+        this.load.svg('pu-points', 'food.svg', { width: 24, height: 24 });
         this.load.svg('exit', 'exit.svg', { width: 32, height: 64 });
         this.load.svg('dirt', 'dirt.svg', { width: 32, height: 32 });
         this.load.svg('ground', 'bg-grass.svg', { width: 32, height: 32 });
