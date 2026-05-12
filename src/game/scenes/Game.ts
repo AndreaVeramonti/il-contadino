@@ -117,12 +117,14 @@ export class Game extends Scene {
         }
         this.breakableBlocks.refresh();
 
-        // Exit
         if (levelData.exit) {
             this.exitSprite = this.physics.add.sprite(levelData.exit.x, levelData.exit.y - 16, 'exit');
             const body = this.exitSprite.body as Phaser.Physics.Arcade.Body;
             body.allowGravity = false;
+            body.setSize(48, 48);
             this.exitSprite.setImmovable(true);
+            this.exitSprite.setOrigin(0.5, 1);
+            this.exitSprite.setDepth(10);
         }
 
         // Player
@@ -157,7 +159,6 @@ export class Game extends Scene {
         if (this.exitSprite) {
             this.physics.add.overlap(this.player.sprite, this.exitSprite, () => this.reachExit());
         }
-
         // Breakable blocks (collider so player stands on them)
         this.physics.add.collider(this.player.sprite, this.breakableBlocks, (_obj1, block) => {
             const pBody = this.player.sprite.body as Phaser.Physics.Arcade.Body;
