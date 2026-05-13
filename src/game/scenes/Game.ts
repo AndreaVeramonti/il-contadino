@@ -94,11 +94,15 @@ export class Game extends Scene {
             (p as Phaser.Physics.Arcade.Sprite).setAlpha(0);
         });
 
-        // --- DECORATIVE TERRAIN: single horizontal strip at bottom (terreno.svg already has 3 rows internally) ---
-        const terrainHeight = Math.round(VH * 0.10);
-        const groundTopY = worldH - terrainHeight;
-        this.add.tileSprite(0, groundTopY, worldW, terrainHeight, 'terreno')
-            .setOrigin(0, 0).setDepth(0.5);
+        // --- DECORATIVE TERRAIN: repeat-x at bottom (SVG is transparent, just the pattern) ---
+        const groundH = Math.round(VH * 0.10);
+        const groundW = Math.round(groundH);
+        const groundY = worldH - groundH;
+        for (let x = 0; x < worldW; x += groundW) {
+            this.add.image(x + groundW / 2, groundY + groundH / 2, 'terreno')
+                .setDisplaySize(groundW, groundH)
+                .setDepth(0.5);
+        }
 
         // --- MOODBOARD DECORATIONS (viewport-relative, deterministic) ---
         interface MoodDeco { asset: string; xPct: number; yPct: number; wPct: number; depth: number; }
