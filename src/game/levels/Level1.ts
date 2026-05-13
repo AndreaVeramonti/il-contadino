@@ -17,6 +17,14 @@
 //   D = powerup punti doppi
 //   H = floating hay platform
 //   ? = breakable block
+//   K = key (apre porte)
+//   J = door (richiede chiave)
+//   ] = secret wall (distruttibile con attacco)
+//   V = fly (mosca, segue player X+Y)
+//   R = skeleton (scheletro, rigenera)
+//   G = ghost (fantasma, onda sinusoidale)
+//   A = archer (arciere, spara frecce)
+//   Z = boss (3 fasi, arena)
 
 export const LEVEL_1_WIDTH = 120;
 export const LEVEL_1_HEIGHT = 18;
@@ -70,6 +78,9 @@ export interface LevelData {
     powerups: { x: number; y: number; type: string }[];
     water: { x: number; y: number }[];
     breakables: { x: number; y: number }[];
+    keys: { x: number; y: number }[];
+    doors: { x: number; y: number }[];
+    secretWalls: { x: number; y: number }[];
 }
 
 export function parseLevel(level: string[], tileSize: number): LevelData {
@@ -82,6 +93,9 @@ export function parseLevel(level: string[], tileSize: number): LevelData {
         powerups: [],
         water: [],
         breakables: [],
+        keys: [],
+        doors: [],
+        secretWalls: [],
     };
 
     for (let row = 0; row < level.length; row++) {
@@ -135,6 +149,30 @@ export function parseLevel(level: string[], tileSize: number): LevelData {
                     break;
                 case 'W':
                     data.water.push({ x, y });
+                    break;
+                case 'K':
+                    data.keys.push({ x, y });
+                    break;
+                case 'J':
+                    data.doors.push({ x, y });
+                    break;
+                case ']':
+                    data.secretWalls.push({ x, y });
+                    break;
+                case 'V':
+                    data.enemies.push({ x: col * tileSize + tileSize / 2, y: (row + 1) * tileSize, type: 'fly' });
+                    break;
+                case 'R':
+                    data.enemies.push({ x: col * tileSize + tileSize / 2, y: (row + 1) * tileSize, type: 'skeleton' });
+                    break;
+                case 'G':
+                    data.enemies.push({ x: col * tileSize + tileSize / 2, y: (row + 1) * tileSize, type: 'ghost' });
+                    break;
+                case 'A':
+                    data.enemies.push({ x: col * tileSize + tileSize / 2, y: (row + 1) * tileSize, type: 'archer' });
+                    break;
+                case 'Z':
+                    data.enemies.push({ x: col * tileSize + tileSize / 2, y: (row + 1) * tileSize, type: 'boss' });
                     break;
             }
         }

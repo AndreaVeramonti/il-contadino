@@ -72,6 +72,34 @@ export class SoundManager {
         }
     }
 
+    playShoot(): void {
+        const ctx = this.getContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(200, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(800, ctx.currentTime + 0.08);
+        gain.gain.setValueAtTime(0.08, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.1);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.1);
+    }
+
+    playEnemyHit(): void {
+        const ctx = this.getContext();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(400, ctx.currentTime);
+        osc.frequency.linearRampToValueAtTime(100, ctx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.1, ctx.currentTime);
+        gain.gain.linearRampToValueAtTime(0, ctx.currentTime + 0.15);
+        osc.connect(gain).connect(ctx.destination);
+        osc.start(ctx.currentTime);
+        osc.stop(ctx.currentTime + 0.15);
+    }
+
     playHit(): void {
         const ctx = this.getContext();
         const osc = ctx.createOscillator();

@@ -8,16 +8,20 @@ export class Player {
     public speedBoost: boolean = false;
     public killMode: boolean = false;
     public doublePoints: boolean = false;
+    public attacking: boolean = false;
+    public hasKey: boolean = false;
 
     private scene: Phaser.Scene;
     private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
     private wasd!: { W: Phaser.Input.Keyboard.Key; A: Phaser.Input.Keyboard.Key; S: Phaser.Input.Keyboard.Key; D: Phaser.Input.Keyboard.Key };
     private spaceKey!: Phaser.Input.Keyboard.Key;
+    private zKey!: Phaser.Input.Keyboard.Key;
     private baseSpeed: number = 200;
     private baseJump: number = -420;
     private speed: number = 200;
     private jumpSpeed: number = -420;
     private targetAngle: number = 0;
+    private attackCooldown: boolean = false;
 
     constructor(config: { scene: Phaser.Scene; x: number; y: number }) {
         this.scene = config.scene;
@@ -40,6 +44,7 @@ export class Player {
             D: kb.addKey(Phaser.Input.Keyboard.KeyCodes.D),
         };
         this.spaceKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.SPACE);
+        this.zKey = kb.addKey(Phaser.Input.Keyboard.KeyCodes.Z);
     }
 
     update(): void {
@@ -64,6 +69,24 @@ export class Player {
             this.sprite.setVelocityY(this.jumpSpeed);
             this.scene.events.emit('player-jumped');
         }
+
+        // Attack with Z key
+        if (Phaser.Input.Keyboard.JustDown(this.zKey) && !this.attacking && !this.attackCooldown) {
+            this.startAttack();
+        }
+    }
+
+    private startAttack(): void {
+        this.attacking = true;
+        const dir = this.sprite.flipX ? -1 : 1;
+        this.scene.events.emit('player-attacked', { x: this.sprite.x, y: this.sprite.y, direction: dir });
+        this.scene.time.delayedCall(250, () => {
+            this.attacking = false;
+        });
+        this.attackCooldown = true;
+        this.scene.time.delayedCall(400, () => {
+            this.attackCooldown = false;
+        });
     }
 
     hit(damage: number = 1): boolean {

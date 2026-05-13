@@ -33,6 +33,11 @@ export class Preloader extends Scene {
         this.load.svg('food', 'food.svg', { width: 16, height: 16 });
         this.load.svg('boar', 'pig.svg', { width: 32, height: 24 });
         this.load.svg('snail', 'monster-5.svg', { width: 28, height: 18 });
+        this.load.svg('fly', 'monster-7.svg', { width: 28, height: 24 });
+        this.load.svg('skeleton', 'monster-8.svg', { width: 28, height: 28 });
+        this.load.svg('ghost', 'howl.svg', { width: 28, height: 28 });
+        this.load.svg('archer', 'monster-3.svg', { width: 28, height: 28 });
+        this.load.svg('boss', 'monster-4.svg', { width: 40, height: 40 });
     }
 
     create(): void {

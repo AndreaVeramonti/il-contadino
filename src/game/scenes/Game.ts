@@ -4,6 +4,9 @@ import { Coin } from '../objects/Coin';
 import { Enemy } from '../objects/Enemy';
 import { EnemyType } from '../objects/EnemyTypes';
 import { PowerUp, getPowerUpLabel, PowerUpType } from '../objects/PowerUp';
+import { Projectile } from '../objects/Projectile';
+import { Key as KeyObj } from '../objects/Key';
+import { Door } from '../objects/Door';
 import { LEVEL_1, parseLevel } from '../levels/Level1';
 import { LEVEL_2 } from '../levels/Level2';
 import { LEVEL_3 } from '../levels/Level3';
@@ -33,6 +36,10 @@ export class Game extends Scene {
     private currentLevel: number = 1;
     private waterGroup!: Phaser.Physics.Arcade.StaticGroup;
     private breakableBlocks!: Phaser.Physics.Arcade.StaticGroup;
+    private projectiles: Projectile[] = [];
+    private keys: KeyObj[] = [];
+    private doors: Door[] = [];
+    private secretWallGroup!: Phaser.Physics.Arcade.StaticGroup;
 
     constructor() { super('Game'); }
 
@@ -117,6 +124,18 @@ export class Game extends Scene {
         }
         this.breakableBlocks.refresh();
 
+        // Keys (K)
+        for (const k of levelData.keys) {
+            this.keys.push(new KeyObj(this, k.x, k.y));
+        }
+
+        // Secret walls (]) — destructible by attack
+        this.secretWallGroup = this.physics.add.staticGroup();
+        for (const s of levelData.secretWalls) {
+            this.secretWallGroup.create(s.x, s.y, 'dirt').setTint(0x888888).setDepth(2);
+        }
+        this.secretWallGroup.refresh();
+
         if (levelData.exit) {
             this.exitSprite = this.physics.add.sprite(levelData.exit.x, levelData.exit.y + 16, 'exit');
             const body = this.exitSprite.body as Phaser.Physics.Arcade.Body;
@@ -135,6 +154,11 @@ export class Game extends Scene {
         // Enemies (after player so they can reference it)
         for (const e of levelData.enemies) {
             this.enemies.push(new Enemy(this, e.x, e.y, (e.type as EnemyType) || 'crow', this.player));
+        }
+
+        // Doors (after player)
+        for (const d of levelData.doors) {
+            this.doors.push(new Door(this, d.x, d.y, this.player));
         }
 
         // Camera
@@ -164,6 +188,21 @@ export class Game extends Scene {
             }
         });
 
+        // Secret wall collider (player stands on them)
+        if (this.secretWallGroup.getLength() > 0) {
+            this.physics.add.collider(this.player.sprite, this.secretWallGroup);
+        }
+
+        // Key pickup overlaps
+        for (const k of this.keys) {
+            this.physics.add.overlap(this.player.sprite, k.sprite, () => this.collectKey(k));
+        }
+
+        // Door overlaps
+        for (const d of this.doors) {
+            this.physics.add.overlap(this.player.sprite, d.sprite, () => this.checkDoor(d));
+        }
+
         // Water collision = death
         if (this.waterGroup.getLength() > 0) {
             this.physics.add.overlap(this.player.sprite, this.waterGroup, () => this.onWaterTouch());
@@ -178,6 +217,15 @@ export class Game extends Scene {
         this.createHUD();
         this.events.on('player-hit', (dmg: number) => this.onPlayerHit(dmg));
         this.events.on('player-died', () => this.onPlayerDied());
+        this.events.on('player-attacked', (data: { x: number; y: number; direction: number }) => {
+            this.spawnPlayerProjectile(data);
+        });
+        this.events.on('enemy-shot', (data: { x: number; y: number; direction: number }) => {
+            this.spawnEnemyProjectile(data);
+        });
+        this.events.on('boss-slam', (data: { x: number; y: number }) => {
+            this.onBossSlam(data.x, data.y);
+        });
 
         this.soundManager.startMusic();
 
@@ -188,6 +236,8 @@ export class Game extends Scene {
         if (this.levelComplete || this.respawning) return;
         this.player.update();
         for (const e of this.enemies) if (e.alive) e.update();
+        this.updateProjectiles();
+        this.checkProjectileHits();
         this.updateExitIndicator();
         this.checkExitDistance();
     }
@@ -225,6 +275,18 @@ export class Game extends Scene {
         this.updateHUD();
         this.soundManager.playCoin();
         this.showFloatingScore(bx, by, '+5', 0xFFD700);
+        // Random drop: 40% coin, 20% powerup
+        const roll = Math.random();
+        if (roll < 0.4) {
+            const c = new Coin(this, bx, by - 16);
+            this.coins.push(c);
+            this.physics.add.overlap(this.player.sprite, c.sprite, () => this.collectCoin(c));
+        } else if (roll < 0.6) {
+            const types: PowerUpType[] = ['invincible', 'speed', 'kill', 'points'];
+            const p = new PowerUp(this, bx, by - 16, types[Math.floor(Math.random() * types.length)]);
+            this.powerups.push(p);
+            this.physics.add.overlap(this.player.sprite, p.sprite, () => this.collectPowerup(p));
+        }
     }
 
     private spawnParticles(x: number, y: number, count: number, color: number, textureKey: string = 'particle'): void {
@@ -404,6 +466,151 @@ export class Game extends Scene {
     private showCombo(text: string): void {
         this.comboText.setText(text).setAlpha(1).setY(270);
         this.tweens.add({ targets: this.comboText, y: 220, alpha: 0, duration: 800, ease: 'Power2' });
+    }
+
+    private spawnPlayerProjectile(data: { x: number; y: number; direction: number }): void {
+        const proj = new Projectile({
+            scene: this, x: data.x, y: data.y - 16,
+            direction: data.direction, fromPlayer: true,
+        });
+        this.projectiles.push(proj);
+        this.soundManager.playShoot();
+    }
+
+    private spawnEnemyProjectile(data: { x: number; y: number; direction: number }): void {
+        const proj = new Projectile({
+            scene: this, x: data.x, y: data.y,
+            direction: data.direction, fromPlayer: false,
+        });
+        this.projectiles.push(proj);
+        this.soundManager.playShoot();
+    }
+
+    private updateProjectiles(): void {
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+            const p = this.projectiles[i];
+            if (!p.active) {
+                this.projectiles.splice(i, 1);
+                continue;
+            }
+            p.update();
+            // Destroy on platform contact
+            const pBody = p.sprite.body as Phaser.Physics.Arcade.Body;
+            if (pBody.blocked.left || pBody.blocked.right || pBody.blocked.down || pBody.blocked.up) {
+                p.destroy();
+                this.projectiles.splice(i, 1);
+            }
+        }
+    }
+
+    private checkProjectileHits(): void {
+        if (this.respawning) return;
+        for (let i = this.projectiles.length - 1; i >= 0; i--) {
+            const p = this.projectiles[i];
+            if (!p.active) continue;
+
+            if (p.fromPlayer) {
+                // Player projectile → hits enemies
+                let hitSomething = false;
+                for (const e of this.enemies) {
+                    if (!e.alive) continue;
+                    const dist = Phaser.Math.Distance.Between(
+                        p.sprite.x, p.sprite.y, e.sprite.x, e.sprite.y,
+                    );
+                    if (dist < 28) {
+                        e.takeDamage(this.player.killMode ? 3 : 1);
+                        this.spawnParticles(p.sprite.x, p.sprite.y, 5, 0xFF4444);
+                        this.soundManager.playEnemyHit();
+                        p.destroy();
+                        this.projectiles.splice(i, 1);
+                        if (!e.alive) {
+                            const pts = this.player.doublePoints ? 100 : 50;
+                            this.score += pts;
+                            this.comboCount++;
+                            this.updateHUD();
+                            this.showCombo(`+${pts} FORKA!`);
+                        }
+                        hitSomething = true;
+                        break;
+                    }
+                }
+                // Player projectile → destroy secret walls
+                if (!hitSomething && this.secretWallGroup) {
+                    const walls = this.secretWallGroup.getChildren() as Phaser.Physics.Arcade.Sprite[];
+                    for (const wall of walls) {
+                        if (!wall.active) continue;
+                        const dist = Phaser.Math.Distance.Between(
+                            p.sprite.x, p.sprite.y, wall.x, wall.y,
+                        );
+                        if (dist < 28) {
+                            this.breakSecretWall(wall);
+                            p.destroy();
+                            this.projectiles.splice(i, 1);
+                            hitSomething = true;
+                            break;
+                        }
+                    }
+                }
+            } else {
+                // Enemy projectile → hits player
+                const dist = Phaser.Math.Distance.Between(
+                    p.sprite.x, p.sprite.y,
+                    this.player.sprite.x, this.player.sprite.y,
+                );
+                if (dist < 24) {
+                    this.onProjectileHitPlayer(p);
+                    p.destroy();
+                    this.projectiles.splice(i, 1);
+                }
+            }
+        }
+    }
+
+    private onProjectileHitPlayer(proj: Projectile): void {
+        if (!this.player.alive || this.player.invincible) return;
+        this.comboCount = 0;
+        this.player.hit(1);
+        this.spawnParticles(proj.sprite.x, proj.sprite.y, 5, 0xFF4444);
+    }
+
+    private onBossSlam(x: number, y: number): void {
+        this.cameras.main.shake(200, 0.01);
+        this.spawnParticles(x, y, 20, 0xFF6600);
+        this.soundManager.playHit();
+        const dist = Phaser.Math.Distance.Between(x, y, this.player.sprite.x, this.player.sprite.y);
+        if (dist < 100 && !this.player.invincible && this.player.alive) {
+            this.comboCount = 0;
+            this.player.hit(1);
+        }
+    }
+
+    private collectKey(key: KeyObj): void {
+        if (key.collected) return;
+        key.collect();
+        this.player.hasKey = true;
+        this.showCombo('OTTENUTA CHIAVE!');
+        this.soundManager.playCoin();
+        this.score += 20;
+        this.updateHUD();
+    }
+
+    private checkDoor(door: Door): void {
+        if (door.opened) return;
+        if (door.tryOpen()) {
+            this.showCombo('PORTA APERTA!');
+            this.soundManager.playLevelComplete();
+            this.score += 50;
+            this.updateHUD();
+        } else {
+            this.showCombo('SERVE UNA CHIAVE!');
+        }
+    }
+
+    private breakSecretWall(wall: Phaser.Physics.Arcade.Sprite): void {
+        this.spawnParticles(wall.x, wall.y, 8, 0x888888);
+        wall.destroy();
+        this.score += 5;
+        this.showCombo('MURO SEGRETO!');
     }
 
     private checkExitDistance(): void {
