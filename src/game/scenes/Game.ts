@@ -92,12 +92,13 @@ export class Game extends Scene {
         cloudGfx.fillEllipse(320, 180, 140, 35);
         cloudGfx.fillEllipse(640, 160, 190, 50);
 
-        // --- MOUNTAIN PARALLAX ---
-        this.mountainBg = this.add.tileSprite(0, worldH - 200, 960, 240, 'mountain-bg');
-        this.mountainBg.setOrigin(0, 0).setScrollFactor(0.1).setDepth(1).setAlpha(0.9);
+        // --- MOUNTAIN PARALLAX (decorative background at horizon) ---
+        const groundSurfaceY = 13 * TILE;
+        this.mountainBg = this.add.tileSprite(0, groundSurfaceY, 2880, 180, 'mountain-bg');
+        this.mountainBg.setOrigin(0, 1).setScrollFactor(0.1).setDepth(-1).setAlpha(0.9);
 
-        this.mountainFg = this.add.tileSprite(0, worldH - 160, 960, 240, 'mountain-fg');
-        this.mountainFg.setOrigin(0, 0).setScrollFactor(0.2).setDepth(2).setAlpha(0.95);
+        this.mountainFg = this.add.tileSprite(0, groundSurfaceY + 4, 2880, 150, 'mountain-fg');
+        this.mountainFg.setOrigin(0, 1).setScrollFactor(0.2).setDepth(-0.5).setAlpha(0.95);
 
         // --- PLATFORMS & TERRAIN ---
         this.platforms = this.physics.add.staticGroup();
@@ -123,32 +124,33 @@ export class Game extends Scene {
 
         // --- SCENIC DECORATIONS ---
         const levelCols = Math.floor(worldW / TILE);
+        const groundY = 13 * TILE + TILE / 2; // Center of ground surface row
 
-        // Far trees (tree-2, smaller, further back)
-        for (let col = 3; col < levelCols - 3; col += 14 + Math.floor(Math.random() * 4)) {
+        // Far trees (tree-2, further back, parallax 0.5)
+        for (let col = 4; col < levelCols - 3; col += 16 + Math.floor(Math.random() * 5)) {
             const tx = col * TILE + TILE / 2;
-            const ty = 12 * TILE + TILE / 2 + 12;
-            this.add.image(tx, ty, 'tree-2').setDepth(5).setScrollFactor(0.5).setAlpha(0.6);
+            const ty = groundY - 40;
+            this.add.image(tx, ty, 'tree-2').setDepth(5).setScrollFactor(0.5).setAlpha(0.7);
         }
 
-        // Near trees (tree, larger, closer)
-        for (let col = 2; col < levelCols - 2; col += 18 + Math.floor(Math.random() * 5)) {
+        // Near trees (tree, closer, parallax 0.7)
+        for (let col = 2; col < levelCols - 2; col += 22 + Math.floor(Math.random() * 6)) {
             const tx = col * TILE + TILE / 2;
-            const ty = 13 * TILE + TILE / 2 - 24;
+            const ty = groundY - 55;
             this.add.image(tx, ty, 'tree').setDepth(6).setScrollFactor(0.7);
         }
 
         // Flowers along ground surface
-        for (let col = 2; col < levelCols; col += 7 + Math.floor(Math.random() * 3)) {
+        for (let col = 3; col < levelCols; col += 8 + Math.floor(Math.random() * 4)) {
             const fx = col * TILE + TILE / 2;
-            const fy = 13 * TILE + TILE / 2 - 18;
+            const fy = groundY - 18;
             const useVar = Math.random() > 0.5;
-            this.add.image(fx, fy, useVar ? 'flower-3' : 'flower').setDepth(4).setAlpha(0.85);
+            this.add.image(fx, fy, useVar ? 'flower-3' : 'flower').setDepth(4).setAlpha(0.9);
         }
 
-        // Apecar at level start
+        // Apecar at level start (centered on ground)
         if (this.currentLevel === 1) {
-            const car = this.add.image(3 * TILE + TILE / 2, 13 * TILE + TILE / 2 - 4, 'car');
+            const car = this.add.image(3 * TILE + TILE / 2, groundY - 14, 'car');
             car.setDepth(7).setScrollFactor(1);
         }
 

@@ -9,15 +9,15 @@ export class Preloader extends Scene {
     }
     preload(): void {
         this.load.setPath('assets/svg');
-        // Decorative SVGs
-        this.load.svg('mountain-bg', 'bg.mountain-1.svg', { width: 960, height: 240 });
-        this.load.svg('mountain-fg', 'bg-mountain-2.svg', { width: 960, height: 240 });
-        this.load.svg('bg-grass', 'bg-grass.svg', { width: 32, height: 32 });
+        // Decorative SVGs — mountains as background horizon silhouettes
+        this.load.svg('mountain-bg', 'bg.mountain-1.svg', { width: 600, height: 180 });
+        this.load.svg('mountain-fg', 'bg-mountain-2.svg', { width: 500, height: 150 });
+        this.load.svg('bg-grass', 'bg-grass.svg', { width: 64, height: 32 });
         this.load.svg('terreno', 'terreno.svg', { width: 64, height: 64 });
-        this.load.svg('tree', 'tree.svg', { width: 32, height: 48 });
-        this.load.svg('tree-2', 'tree-2.svg', { width: 24, height: 36 });
-        this.load.svg('flower', 'flower.svg', { width: 16, height: 16 });
-        this.load.svg('flower-3', 'flower-3.svg', { width: 14, height: 14 });
+        this.load.svg('tree', 'tree.svg', { width: 80, height: 120 });
+        this.load.svg('tree-2', 'tree-2.svg', { width: 60, height: 90 });
+        this.load.svg('flower', 'flower.svg', { width: 32, height: 48 });
+        this.load.svg('flower-3', 'flower-3.svg', { width: 28, height: 40 });
         this.load.svg('car', 'car.svg', { width: 48, height: 36 });
         this.load.svg('exit', 'exit.svg', { width: 32, height: 64 });
         this.load.svg('flag', 'flag.svg', { width: 32, height: 32 });
