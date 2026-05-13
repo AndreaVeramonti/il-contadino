@@ -79,6 +79,8 @@ export class Game extends Scene {
 
         this.physics.world.setBounds(0, 0, worldW, worldH);
         this.cameras.main.setBackgroundColor('#F7F6F0');
+        const VW = this.cameras.main.width;
+        const VH = this.cameras.main.height;
 
         // --- PLATFORMS & TERRAIN (collision layer) ---
         this.platforms = this.physics.add.staticGroup();
@@ -92,20 +94,13 @@ export class Game extends Scene {
             (p as Phaser.Physics.Arcade.Sprite).setAlpha(0);
         });
 
-        // --- DECORATIVE TERRAIN: 3 thin stripes at bottom ---
-        const tileH = 12;
-        const rowGap = 6;
-        const totalH = 3 * tileH + 2 * rowGap;
-        const groundTopY = worldH - totalH;
-        for (let row = 0; row < 3; row++) {
-            this.add.tileSprite(0, groundTopY + row * (tileH + rowGap), worldW, tileH, 'terreno-tile')
-                .setOrigin(0, 0).setDepth(0.5);
-        }
+        // --- DECORATIVE TERRAIN: single horizontal strip at bottom (terreno.svg already has 3 rows internally) ---
+        const terrainHeight = Math.round(VH * 0.10);
+        const groundTopY = worldH - terrainHeight;
+        this.add.tileSprite(0, groundTopY, worldW, terrainHeight, 'terreno')
+            .setOrigin(0, 0).setDepth(0.5);
 
         // --- MOODBOARD DECORATIONS (viewport-relative, deterministic) ---
-        const VW = this.cameras.main.width;
-        const VH = this.cameras.main.height;
-
         interface MoodDeco { asset: string; xPct: number; yPct: number; wPct: number; depth: number; }
         const MOOD: MoodDeco[] = [
             // Mountains (7, upper half, deep layer)
