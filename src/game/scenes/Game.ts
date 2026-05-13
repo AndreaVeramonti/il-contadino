@@ -82,16 +82,6 @@ export class Game extends Scene {
         this.physics.world.setBounds(0, 0, worldW, worldH);
         this.cameras.main.setBackgroundColor('#E8E4D4');
 
-        // --- CLOUDS ---
-        const cloudGfx = this.add.graphics();
-        cloudGfx.setScrollFactor(0).setDepth(0);
-        cloudGfx.fillStyle(0xFFFFFF, 0.7);
-        cloudGfx.fillEllipse(160, 70, 180, 50);
-        cloudGfx.fillEllipse(480, 110, 220, 60);
-        cloudGfx.fillEllipse(760, 50, 160, 45);
-        cloudGfx.fillEllipse(320, 180, 140, 35);
-        cloudGfx.fillEllipse(640, 160, 190, 50);
-
         // --- MOUNTAIN PARALLAX (decorative background at horizon) ---
         const groundSurfaceY = 13 * TILE;
         this.mountainBg = this.add.tileSprite(0, groundSurfaceY, 2880, 180, 'mountain-bg');
@@ -110,6 +100,18 @@ export class Game extends Scene {
             terrainGrid.add(`${col},${row}`);
         }
         this.platforms.refresh();
+
+        // Continuous terreno tileSprite covering all ground as a single visual strip
+        const minPlatformY = Math.min(...levelData.platforms.map(p => p.y));
+        const groundVisualTop = minPlatformY - TILE / 2;
+        const groundVisual = this.add.tileSprite(0, groundVisualTop, worldW, worldH - groundVisualTop, 'terreno');
+        groundVisual.setOrigin(0, 0).setDepth(0.5);
+
+        // Hide individual physics tiles at ground level (keep as invisible collision hulls)
+        this.platforms.getChildren().forEach((p) => {
+            const tile = p as Phaser.Physics.Arcade.Sprite;
+            if (tile.y >= minPlatformY) tile.setAlpha(0);
+        });
 
         // Grass patches on top edges of terrain
         for (const p of levelData.platforms) {
