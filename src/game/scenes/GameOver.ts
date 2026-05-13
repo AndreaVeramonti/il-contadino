@@ -11,7 +11,7 @@ export class GameOver extends Scene {
         this.finalScore = data?.score ?? 0;
     }
     create(): void {
-        this.cameras.main.setBackgroundColor('#E8E4D4');
+        this.cameras.main.setBackgroundColor('#F7F6F0');
 
         if (this.victory) {
             this.add.text(480, 170, 'LIVELLO COMPLETATO!', {

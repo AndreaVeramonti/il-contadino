@@ -3,7 +3,7 @@ import { Scene } from 'phaser';
 export class Preloader extends Scene {
     constructor() { super('Preloader'); }
     init(): void {
-        this.cameras.main.setBackgroundColor('#E8E4D4');
+        this.cameras.main.setBackgroundColor('#F7F6F0');
         const bar = this.add.rectangle(480, 340, 4, 28, 0x1A1A1A);
         this.load.on('progress', (p: number) => { bar.width = 4 + (552 * p); });
     }

@@ -151,6 +151,15 @@ export class Boot extends Scene {
             g.fillCircle(5, 5, 4);
         });
 
+        // --- Terreno-tile (12px small strip for bottom rows) ---
+        this.genTex('terreno-tile', 12, 12, (g) => {
+            g.fillStyle(0xC8C87A);
+            g.fillRect(0, 0, 12, 12);
+            g.lineStyle(1, 0xB8B86A, 0.5);
+            g.lineBetween(0, 0, 12, 12);
+            g.lineBetween(12, 0, 0, 12);
+        });
+
         // --- Particle (white square) 6×6 ---
         this.genTex('particle', 6, 6, (g) => {
             g.fillStyle(0xFFFFFF);

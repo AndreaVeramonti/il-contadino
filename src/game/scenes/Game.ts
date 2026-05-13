@@ -78,79 +78,73 @@ export class Game extends Scene {
         }
 
         this.physics.world.setBounds(0, 0, worldW, worldH);
-        this.cameras.main.setBackgroundColor('#E8E4D4');
+        this.cameras.main.setBackgroundColor('#F7F6F0');
 
-        // --- MOUNTAINS (decorative background elements, sparse) ---
-        const groundSurfaceY = 13 * TILE;
-        const mtnTypes = ['mountain-bg', 'mountain-fg'];
-        const mtnCount = 7;
-        const mtnSpacing = worldW / (mtnCount + 1);
-        for (let i = 0; i < mtnCount; i++) {
-            const x = mtnSpacing * (i + 1) + (Math.random() - 0.5) * 60;
-            const y = 100 + Math.random() * 80;
-            this.add.image(x, y, mtnTypes[i % 2])
-                .setScrollFactor(0.08)
-                .setDepth(-1)
-                .setScale(0.3 + Math.random() * 0.1);
-        }
-
-        // --- PLATFORMS & TERRAIN ---
+        // --- PLATFORMS & TERRAIN (collision layer) ---
         this.platforms = this.physics.add.staticGroup();
-        const terrainGrid = new Set<string>();
         for (const p of levelData.platforms) {
             this.platforms.create(p.x, p.y, 'terreno');
-            const col = Math.round((p.x - TILE / 2) / TILE);
-            const row = Math.round((p.y - TILE / 2) / TILE);
-            terrainGrid.add(`${col},${row}`);
         }
         this.platforms.refresh();
 
-        // Terrain visual: 4 horizontal rows of terreno at ground surface
-        this.add.tileSprite(0, groundSurfaceY, worldW, TILE * 4, 'terreno')
-            .setOrigin(0, 0).setDepth(0.5);
-
-        // Hide individual physics tiles at ground level (keep as invisible collision hulls)
+        // Hide all physics tiles (invisible collision hulls)
         this.platforms.getChildren().forEach((p) => {
-            const tile = p as Phaser.Physics.Arcade.Sprite;
-            if (tile.y >= groundSurfaceY + TILE / 2) tile.setAlpha(0);
+            (p as Phaser.Physics.Arcade.Sprite).setAlpha(0);
         });
 
-        // Grass patches on top edges of terrain
-        for (const p of levelData.platforms) {
-            const col = Math.round((p.x - TILE / 2) / TILE);
-            const row = Math.round((p.y - TILE / 2) / TILE);
-            if (!terrainGrid.has(`${col},${row - 1}`)) {
-                this.add.image(p.x, p.y - TILE, 'bg-grass').setDepth(3).setAlpha(0.85);
-            }
+        // --- DECORATIVE TERRAIN: 3 thin stripes at bottom ---
+        const tileH = 12;
+        const rowGap = 6;
+        const totalH = 3 * tileH + 2 * rowGap;
+        const groundTopY = worldH - totalH;
+        for (let row = 0; row < 3; row++) {
+            this.add.tileSprite(0, groundTopY + row * (tileH + rowGap), worldW, tileH, 'terreno-tile')
+                .setOrigin(0, 0).setDepth(0.5);
         }
 
-        // --- SCENIC DECORATIONS (minimal, well-spaced) ---
-        const groundY = 13 * TILE + TILE / 2;
+        // --- MOODBOARD DECORATIONS (viewport-relative, deterministic) ---
+        const VW = this.cameras.main.width;
+        const VH = this.cameras.main.height;
 
-        // Trees (sparse, isolated)
-        const treeDefs = [
-            { col: 6, type: 'tree-2', sf: 0.5, yo: -40, al: 0.7, dp: 5 },
-            { col: 30, type: 'tree', sf: 0.7, yo: -55, al: 0.9, dp: 6 },
-            { col: 55, type: 'tree-2', sf: 0.5, yo: -40, al: 0.7, dp: 5 },
-            { col: 78, type: 'tree', sf: 0.7, yo: -55, al: 0.9, dp: 6 },
-            { col: 100, type: 'tree-2', sf: 0.5, yo: -40, al: 0.7, dp: 5 },
+        interface MoodDeco { asset: string; xPct: number; yPct: number; wPct: number; depth: number; }
+        const MOOD: MoodDeco[] = [
+            // Mountains (7, upper half, deep layer)
+            { asset: 'mountain-bg', xPct: 15.5, yPct: 11.5, wPct: 12.7, depth: -10 },
+            { asset: 'mountain-fg', xPct: 34.5, yPct: 10.0, wPct: 12.7, depth: -10 },
+            { asset: 'mountain-bg', xPct: 58.0, yPct:  8.5, wPct: 12.7, depth: -10 },
+            { asset: 'mountain-fg', xPct: 75.5, yPct: 20.0, wPct: 12.7, depth: -10 },
+            { asset: 'mountain-bg', xPct: 93.0, yPct: 19.0, wPct: 12.7, depth: -10 },
+            { asset: 'mountain-fg', xPct: 46.0, yPct: 29.0, wPct: 12.7, depth: -10 },
+            { asset: 'mountain-bg', xPct:  7.5, yPct: 31.0, wPct: 12.7, depth: -10 },
+            // Trees (4, mid-ground)
+            { asset: 'tree',   xPct: 13.0, yPct: 51.5, wPct:  5.3, depth: 5 },
+            { asset: 'tree-2', xPct: 33.3, yPct: 37.8, wPct:  6.4, depth: 5 },
+            { asset: 'tree',   xPct: 60.5, yPct: 44.0, wPct:  5.3, depth: 5 },
+            { asset: 'tree-2', xPct: 91.0, yPct: 49.3, wPct:  6.4, depth: 5 },
+            // Flowers (5 groups)
+            { asset: 'flower', xPct:  1.0, yPct: 84.0, wPct:  4.8, depth: 6 },
+            { asset: 'flower', xPct: 18.0, yPct: 84.5, wPct:  4.8, depth: 6 },
+            { asset: 'flower', xPct: 59.0, yPct: 84.0, wPct:  4.8, depth: 6 },
+            { asset: 'flower', xPct: 70.7, yPct: 84.5, wPct:  4.8, depth: 6 },
+            { asset: 'flower', xPct: 90.7, yPct: 84.0, wPct:  4.8, depth: 6 },
         ];
-        for (const t of treeDefs) {
-            if (t.col * TILE > worldW) continue;
-            this.add.image(t.col * TILE + TILE / 2, groundY + t.yo, t.type)
-                .setDepth(t.dp).setScrollFactor(t.sf).setAlpha(t.al);
+
+        for (const d of MOOD) {
+            if (d.asset === 'car' && this.currentLevel !== 1) continue;
+            const img = this.add.image(VW * (d.xPct / 100), VH * (d.yPct / 100), d.asset);
+            img.setDepth(d.depth);
+            const tex = this.textures.get(d.asset);
+            const aspect = tex.get().height / tex.get().width;
+            img.setDisplaySize(VW * (d.wPct / 100), VW * (d.wPct / 100) * aspect);
         }
 
-        // Flowers (small isolated groups)
-        const flowerCols = [18, 62, 96];
-        for (const col of flowerCols) {
-            if (col * TILE > worldW) continue;
-            this.add.image(col * TILE + TILE / 2, groundY - 18, 'flower').setDepth(4).setAlpha(0.9);
-        }
-
-        // Apecar at level start
+        // Apecar (level 1 only, after other decos so depth is correct)
         if (this.currentLevel === 1) {
-            this.add.image(5 * TILE + TILE / 2, groundY - 14, 'car').setDepth(7);
+            const car = this.add.image(VW * 0.05, VH * 0.68, 'car');
+            car.setDepth(7);
+            const tex = this.textures.get('car');
+            const aspect = tex.get().height / tex.get().width;
+            car.setDisplaySize(VW * 0.096, VW * 0.096 * aspect);
         }
 
         // --- GAME OBJECTS ---

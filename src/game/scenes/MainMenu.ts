@@ -5,7 +5,7 @@ export class MainMenu extends Scene {
         super('MainMenu');
     }
     create(): void {
-        this.cameras.main.setBackgroundColor('#E8E4D4');
+        this.cameras.main.setBackgroundColor('#F7F6F0');
 
         // Mountains as decorative background (lower area, behind everything)
         this.add.image(480, 400, 'mountain-bg').setAlpha(0.3).setScale(1).setDepth(0);
