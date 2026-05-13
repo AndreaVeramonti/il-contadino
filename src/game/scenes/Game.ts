@@ -40,8 +40,6 @@ export class Game extends Scene {
     private keys: KeyObj[] = [];
     private doors: Door[] = [];
     private secretWallGroup!: Phaser.Physics.Arcade.StaticGroup;
-    private mountainBg!: Phaser.GameObjects.TileSprite;
-    private mountainFg!: Phaser.GameObjects.TileSprite;
 
     constructor() { super('Game'); }
 
@@ -82,13 +80,19 @@ export class Game extends Scene {
         this.physics.world.setBounds(0, 0, worldW, worldH);
         this.cameras.main.setBackgroundColor('#E8E4D4');
 
-        // --- MOUNTAIN PARALLAX (decorative background at horizon) ---
+        // --- MOUNTAINS (decorative background elements, sparse) ---
         const groundSurfaceY = 13 * TILE;
-        this.mountainBg = this.add.tileSprite(0, groundSurfaceY, 2880, 180, 'mountain-bg');
-        this.mountainBg.setOrigin(0, 1).setScrollFactor(0.1).setDepth(-1).setAlpha(0.9);
-
-        this.mountainFg = this.add.tileSprite(0, groundSurfaceY + 4, 2880, 150, 'mountain-fg');
-        this.mountainFg.setOrigin(0, 1).setScrollFactor(0.2).setDepth(-0.5).setAlpha(0.95);
+        const mtnTypes = ['mountain-bg', 'mountain-fg'];
+        const mtnCount = 7;
+        const mtnSpacing = worldW / (mtnCount + 1);
+        for (let i = 0; i < mtnCount; i++) {
+            const x = mtnSpacing * (i + 1) + (Math.random() - 0.5) * 60;
+            const y = 100 + Math.random() * 80;
+            this.add.image(x, y, mtnTypes[i % 2])
+                .setScrollFactor(0.08)
+                .setDepth(-1)
+                .setScale(0.3 + Math.random() * 0.1);
+        }
 
         // --- PLATFORMS & TERRAIN ---
         this.platforms = this.physics.add.staticGroup();
@@ -101,16 +105,14 @@ export class Game extends Scene {
         }
         this.platforms.refresh();
 
-        // Continuous terreno tileSprite covering all ground as a single visual strip
-        const minPlatformY = Math.min(...levelData.platforms.map(p => p.y));
-        const groundVisualTop = minPlatformY - TILE / 2;
-        const groundVisual = this.add.tileSprite(0, groundVisualTop, worldW, worldH - groundVisualTop, 'terreno');
-        groundVisual.setOrigin(0, 0).setDepth(0.5);
+        // Terrain visual: 4 horizontal rows of terreno at ground surface
+        this.add.tileSprite(0, groundSurfaceY, worldW, TILE * 4, 'terreno')
+            .setOrigin(0, 0).setDepth(0.5);
 
         // Hide individual physics tiles at ground level (keep as invisible collision hulls)
         this.platforms.getChildren().forEach((p) => {
             const tile = p as Phaser.Physics.Arcade.Sprite;
-            if (tile.y >= minPlatformY) tile.setAlpha(0);
+            if (tile.y >= groundSurfaceY + TILE / 2) tile.setAlpha(0);
         });
 
         // Grass patches on top edges of terrain
@@ -118,42 +120,37 @@ export class Game extends Scene {
             const col = Math.round((p.x - TILE / 2) / TILE);
             const row = Math.round((p.y - TILE / 2) / TILE);
             if (!terrainGrid.has(`${col},${row - 1}`)) {
-                const gx = p.x;
-                const gy = p.y - TILE;
-                this.add.image(gx, gy, 'bg-grass').setDepth(3).setAlpha(0.85);
+                this.add.image(p.x, p.y - TILE, 'bg-grass').setDepth(3).setAlpha(0.85);
             }
         }
 
-        // --- SCENIC DECORATIONS ---
-        const levelCols = Math.floor(worldW / TILE);
-        const groundY = 13 * TILE + TILE / 2; // Center of ground surface row
+        // --- SCENIC DECORATIONS (minimal, well-spaced) ---
+        const groundY = 13 * TILE + TILE / 2;
 
-        // Far trees (tree-2, further back, parallax 0.5)
-        for (let col = 4; col < levelCols - 3; col += 16 + Math.floor(Math.random() * 5)) {
-            const tx = col * TILE + TILE / 2;
-            const ty = groundY - 40;
-            this.add.image(tx, ty, 'tree-2').setDepth(5).setScrollFactor(0.5).setAlpha(0.7);
+        // Trees (sparse, isolated)
+        const treeDefs = [
+            { col: 6, type: 'tree-2', sf: 0.5, yo: -40, al: 0.7, dp: 5 },
+            { col: 30, type: 'tree', sf: 0.7, yo: -55, al: 0.9, dp: 6 },
+            { col: 55, type: 'tree-2', sf: 0.5, yo: -40, al: 0.7, dp: 5 },
+            { col: 78, type: 'tree', sf: 0.7, yo: -55, al: 0.9, dp: 6 },
+            { col: 100, type: 'tree-2', sf: 0.5, yo: -40, al: 0.7, dp: 5 },
+        ];
+        for (const t of treeDefs) {
+            if (t.col * TILE > worldW) continue;
+            this.add.image(t.col * TILE + TILE / 2, groundY + t.yo, t.type)
+                .setDepth(t.dp).setScrollFactor(t.sf).setAlpha(t.al);
         }
 
-        // Near trees (tree, closer, parallax 0.7)
-        for (let col = 2; col < levelCols - 2; col += 22 + Math.floor(Math.random() * 6)) {
-            const tx = col * TILE + TILE / 2;
-            const ty = groundY - 55;
-            this.add.image(tx, ty, 'tree').setDepth(6).setScrollFactor(0.7);
+        // Flowers (small isolated groups)
+        const flowerCols = [18, 62, 96];
+        for (const col of flowerCols) {
+            if (col * TILE > worldW) continue;
+            this.add.image(col * TILE + TILE / 2, groundY - 18, 'flower').setDepth(4).setAlpha(0.9);
         }
 
-        // Flowers along ground surface
-        for (let col = 3; col < levelCols; col += 8 + Math.floor(Math.random() * 4)) {
-            const fx = col * TILE + TILE / 2;
-            const fy = groundY - 18;
-            const useVar = Math.random() > 0.5;
-            this.add.image(fx, fy, useVar ? 'flower-3' : 'flower').setDepth(4).setAlpha(0.9);
-        }
-
-        // Apecar at level start (centered on ground)
+        // Apecar at level start
         if (this.currentLevel === 1) {
-            const car = this.add.image(3 * TILE + TILE / 2, groundY - 14, 'car');
-            car.setDepth(7).setScrollFactor(1);
+            this.add.image(5 * TILE + TILE / 2, groundY - 14, 'car').setDepth(7);
         }
 
         // --- GAME OBJECTS ---
@@ -287,11 +284,6 @@ export class Game extends Scene {
         this.checkProjectileHits();
         this.updateExitIndicator();
         this.checkExitDistance();
-
-        // Parallax mountain tile position
-        const cam = this.cameras.main;
-        if (this.mountainBg) this.mountainBg.tilePositionX = cam.scrollX * 0.1;
-        if (this.mountainFg) this.mountainFg.tilePositionX = cam.scrollX * 0.2;
     }
 
     // ---------- EXIT ----------
