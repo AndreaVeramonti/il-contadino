@@ -4,37 +4,39 @@ export class MainMenu extends Scene {
     constructor() {
         super('MainMenu');
     }
-
     create(): void {
-        this.add.image(480, 270, 'bg');
-        this.add.image(480, 162, 'hills').setAlpha(0.3);
+        this.cameras.main.setBackgroundColor('#E8E4D4');
 
-        this.add.text(480, 180, 'IL CONTADINO', {
-            fontFamily: 'Georgia, serif',
-            fontSize: '56px',
-            color: '#2B1810',
-            stroke: '#C8A951',
-            strokeThickness: 4,
+        // Mountains in lower half
+        this.add.image(480, 440, 'mountain-bg').setAlpha(0.4).setScale(1);
+
+        // Title
+        this.add.text(480, 160, 'IL CONTADINO', {
+            fontFamily: 'Playfair Display, Georgia, serif',
+            fontSize: '60px',
+            color: '#1A1A1A',
         }).setOrigin(0.5);
 
-        this.add.text(480, 243, 'Un\'avventura nei campi', {
-            fontFamily: 'Georgia, serif',
+        // Subtitle
+        this.add.text(480, 225, 'Un\'avventura nei campi', {
+            fontFamily: 'Playfair Display, Georgia, serif',
             fontSize: '22px',
-            color: '#5C3A1E',
+            color: '#3D6B35',
             fontStyle: 'italic',
         }).setOrigin(0.5);
 
-        this.add.image(320, 324, 'platform').setScale(1.5);
-        this.add.image(640, 324, 'platform').setScale(1.5);
+        // Terreno blocks as decoration
+        this.add.image(280, 310, 'terreno').setScale(1.2);
+        this.add.image(680, 310, 'terreno').setScale(1.2);
 
-        const startText = this.add.text(480, 414, 'CLICCA PER INIZIARE', {
-            fontFamily: 'Arial',
+        // Start prompt
+        const startText = this.add.text(480, 400, 'CLICCA PER INIZIARE', {
+            fontFamily: 'Playfair Display, Georgia, serif',
             fontSize: '28px',
-            color: '#ffffff',
-            stroke: '#5C3A1E',
-            strokeThickness: 6,
+            color: '#CC2200',
+            stroke: '#1A1A1A',
+            strokeThickness: 2,
         }).setOrigin(0.5);
-
         this.tweens.add({
             targets: startText,
             alpha: 0.3,
@@ -43,17 +45,17 @@ export class MainMenu extends Scene {
             repeat: -1,
         });
 
-        this.add.text(480, 477, 'WASD / Frecce = muoviti   |   Spazio = salta   |   Sopra i nemici = schiacciali', {
-            fontFamily: 'Arial',
+        // Controls hint
+        this.add.text(480, 478, 'WASD / Frecce = muoviti   |   Z = attacca  |   Sopra i nemici = schiacciali', {
+            fontFamily: 'Playfair Display, Georgia, serif',
             fontSize: '14px',
-            color: '#5C3A1E',
+            color: '#3D6B35',
             align: 'center',
         }).setOrigin(0.5);
 
         this.input.once('pointerdown', () => {
             this.scene.start('Game');
         });
-
         this.input.keyboard?.once('keydown-SPACE', () => {
             this.scene.start('Game');
         });

@@ -3,60 +3,54 @@ import { Scene } from 'phaser';
 export class GameOver extends Scene {
     private victory: boolean = false;
     private finalScore: number = 0;
-
     constructor() {
         super('GameOver');
     }
-
     init(data: { victory?: boolean; score?: number }): void {
         this.victory = data?.victory ?? false;
         this.finalScore = data?.score ?? 0;
     }
-
     create(): void {
-        this.cameras.main.setBackgroundColor(0x1a1a2e);
+        this.cameras.main.setBackgroundColor('#E8E4D4');
 
         if (this.victory) {
-            this.add.text(480, 180, 'LIVELLO COMPLETATO!', {
-                fontFamily: 'Georgia, serif',
+            this.add.text(480, 170, 'LIVELLO COMPLETATO!', {
+                fontFamily: 'Playfair Display, Georgia, serif',
                 fontSize: '48px',
-                color: '#FFD700',
-                stroke: '#5C3A1E',
-                strokeThickness: 6,
+                color: '#3D6B35',
+                stroke: '#1A1A1A',
+                strokeThickness: 2,
             }).setOrigin(0.5);
-
-            this.add.image(480, 288, 'exit').setScale(2);
+            this.add.image(480, 270, 'exit').setScale(2);
         } else {
             this.add.text(480, 180, 'GAME OVER', {
-                fontFamily: 'Georgia, serif',
+                fontFamily: 'Playfair Display, Georgia, serif',
                 fontSize: '56px',
-                color: '#FF4444',
-                stroke: '#2B1810',
-                strokeThickness: 6,
+                color: '#CC2200',
+                stroke: '#1A1A1A',
+                strokeThickness: 2,
             }).setOrigin(0.5);
-
-            this.add.text(480, 270, 'Il corvo ha vinto...', {
-                fontFamily: 'Georgia, serif',
+            this.add.text(480, 260, 'Il corvo ha vinto...', {
+                fontFamily: 'Playfair Display, Georgia, serif',
                 fontSize: '24px',
-                color: '#CCCCCC',
+                color: '#3D6B35',
                 fontStyle: 'italic',
             }).setOrigin(0.5);
         }
 
-        this.add.text(480, 378, `Punteggio: ${this.finalScore}`, {
-            fontFamily: 'Arial',
+        this.add.text(480, 370, `PUNTEGGIO: ${this.finalScore}`, {
+            fontFamily: 'Playfair Display, Georgia, serif',
             fontSize: '28px',
-            color: '#FFFFFF',
+            color: '#1A1A1A',
         }).setOrigin(0.5);
 
-        const restartText = this.add.text(480, 450, 'CLICCA PER RICOMINCIARE', {
-            fontFamily: 'Arial',
+        const restartText = this.add.text(480, 440, 'CLICCA PER RICOMINCIARE', {
+            fontFamily: 'Playfair Display, Georgia, serif',
             fontSize: '22px',
-            color: '#FFD700',
-            stroke: '#2B1810',
-            strokeThickness: 4,
+            color: '#CC2200',
+            stroke: '#1A1A1A',
+            strokeThickness: 2,
         }).setOrigin(0.5);
-
         this.tweens.add({
             targets: restartText,
             alpha: 0.3,

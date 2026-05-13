@@ -18,7 +18,7 @@ export class Projectile {
     }) {
         this.scene = config.scene;
         this.fromPlayer = config.fromPlayer;
-        const tex = config.texture ?? (config.fromPlayer ? 'coin' : 'enemy');
+        const tex = config.texture ?? (config.fromPlayer ? 'proj-player' : 'proj-enemy');
         const speed = config.speed ?? (config.fromPlayer ? 350 : 200);
 
         this.sprite = config.scene.physics.add.sprite(config.x, config.y, tex);
